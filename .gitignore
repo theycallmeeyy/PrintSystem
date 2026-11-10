@@ -1,0 +1,15 @@
+node_modules/
+dist/
+
+# Runtime order records and uploaded customer files may contain private data.
+data/orders.json
+data/staff-users.json
+data/uploads/*
+!data/uploads/seed_sample_flyer.png
+!data/uploads/seed_sample_report.pdf
+!data/uploads/seed_sample_thesis.docx
+
+.env
+.env.*
+!.env.example
+npm-debug.log*

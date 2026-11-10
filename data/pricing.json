@@ -1,0 +1,270 @@
+{
+  "currency": "PHP",
+  "currencySymbol": "?",
+  "taxRatePercent": 0,
+  "setupFee": 0,
+  "rushFeePercent": 25,
+  "deliveryFee": 80,
+  "jobTypes": [
+    {
+      "id": "document",
+      "name": "Document Printing",
+      "description": "Standard black & white or color document prints",
+      "baseRatePerPage": 1.5,
+      "isPerSheetProduct": false
+    },
+    {
+      "id": "photocopy",
+      "name": "Photocopying",
+      "description": "Fast high-volume document duplication",
+      "baseRatePerPage": 1,
+      "isPerSheetProduct": false
+    },
+    {
+      "id": "photo",
+      "name": "Photo Printing",
+      "description": "High-resolution photo prints with archival inks",
+      "baseRatePerPage": 15,
+      "isPerSheetProduct": true
+    },
+    {
+      "id": "flyers",
+      "name": "Flyers & Leaflets",
+      "description": "Single-sheet marketing flyers and handouts",
+      "baseRatePerPage": 3.5,
+      "isPerSheetProduct": true
+    },
+    {
+      "id": "posters",
+      "name": "Posters & Banners",
+      "description": "Large format vibrant wall prints and promotional posters",
+      "baseRatePerPage": 35,
+      "isPerSheetProduct": true
+    },
+    {
+      "id": "booklets",
+      "name": "Brochures & Booklets",
+      "description": "Folded multi-page brochures and stapled booklets",
+      "baseRatePerPage": 4.5,
+      "isPerSheetProduct": false
+    },
+    {
+      "id": "custom",
+      "name": "Custom Print Job",
+      "description": "Special dimensions, bespoke print requests, or custom stock",
+      "baseRatePerPage": 5,
+      "isPerSheetProduct": true
+    }
+  ],
+  "paperSizes": [
+    {
+      "id": "A4",
+      "name": "A4 (8.27\" x 11.69\" / 210 x 297mm)",
+      "surcharge": 0,
+      "multiplier": 1,
+      "documentRates": {
+        "bw": 7,
+        "color": 12
+      }
+    },
+    {
+      "id": "Letter",
+      "name": "Short / Letter (8.5\" x 11\" / 216 x 279mm)",
+      "surcharge": 0,
+      "multiplier": 1,
+      "documentRates": {
+        "bw": 5,
+        "color": 10
+      }
+    },
+    {
+      "id": "Legal",
+      "name": "Long / Legal (8.5\" x 14\" / 216 x 356mm)",
+      "surcharge": 0.5,
+      "multiplier": 1.1,
+      "documentRates": {
+        "bw": 9,
+        "color": 15
+      }
+    },
+    {
+      "id": "A5",
+      "name": "A5 (5.83\" x 8.27\" / 148 x 210mm)",
+      "surcharge": 0,
+      "multiplier": 0.8
+    },
+    {
+      "id": "A3",
+      "name": "A3 (11.69\" x 16.54\" / 297 x 420mm)",
+      "surcharge": 6,
+      "multiplier": 2
+    },
+    {
+      "id": "Custom",
+      "name": "Custom Dimensions",
+      "surcharge": 8,
+      "multiplier": 1.25
+    }
+  ],
+  "paperMaterials": [
+    {
+      "id": "bond-70",
+      "name": "Standard Bond Paper (70 gsm)",
+      "pricePerSheet": 0.5,
+      "description": "Economical everyday paper"
+    },
+    {
+      "id": "bond-80",
+      "name": "Premium Bright Bond Paper (80 gsm)",
+      "pricePerSheet": 1,
+      "description": "Crisp, smooth high-opacity bond"
+    },
+    {
+      "id": "glossy-120",
+      "name": "Glossy Paper (120 gsm)",
+      "pricePerSheet": 3.5,
+      "description": "Vibrant sheen for flyers & presentations"
+    },
+    {
+      "id": "photo-200",
+      "name": "High-Gloss Photo Paper (200 gsm)",
+      "pricePerSheet": 8,
+      "description": "Professional true-to-life photo finish"
+    },
+    {
+      "id": "cardstock-220",
+      "name": "Heavy Cardstock (220 gsm)",
+      "pricePerSheet": 5,
+      "description": "Sturdy paper for covers & certificates"
+    },
+    {
+      "id": "cardstock-300",
+      "name": "Ultra-Heavy Cardstock (300 gsm)",
+      "pricePerSheet": 8.5,
+      "description": "Extra rigid board for cards & menus"
+    },
+    {
+      "id": "specialty-textured",
+      "name": "Specialty Textured Paper (Linen/Parchment)",
+      "pricePerSheet": 12,
+      "description": "Luxury tactile surface for invites"
+    },
+    {
+      "id": "sticker-vinyl",
+      "name": "Adhesive Sticker / Vinyl Paper",
+      "pricePerSheet": 15,
+      "description": "Peel-and-stick waterproof finish"
+    }
+  ],
+  "colorModes": [
+    {
+      "id": "bw",
+      "name": "Black & White (Monochrome)",
+      "surchargePerPage": 0
+    },
+    {
+      "id": "color",
+      "name": "Full Color Printing",
+      "surchargePerPage": 3.5
+    }
+  ],
+  "printSides": [
+    {
+      "id": "single",
+      "name": "Single-sided (1 Side)",
+      "sidesPerSheet": 1,
+      "discountFactor": 1
+    },
+    {
+      "id": "double",
+      "name": "Double-sided (Duplex, 2 Sides)",
+      "sidesPerSheet": 2,
+      "discountFactor": 0.9
+    }
+  ],
+  "finishingServices": [
+    {
+      "id": "lamination-gloss",
+      "name": "Thermal Lamination (Gloss)",
+      "price": 15,
+      "pricingType": "per-sheet",
+      "description": "Waterproof protective shiny film"
+    },
+    {
+      "id": "lamination-matte",
+      "name": "Thermal Lamination (Matte)",
+      "price": 18,
+      "pricingType": "per-sheet",
+      "description": "Sophisticated non-reflective finish"
+    },
+    {
+      "id": "binding-comb",
+      "name": "Plastic Comb Binding",
+      "price": 35,
+      "pricingType": "per-copy",
+      "description": "Standard flexible comb with clear cover & backboard"
+    },
+    {
+      "id": "binding-wire",
+      "name": "Wire-O Spiral Binding",
+      "price": 55,
+      "pricingType": "per-copy",
+      "description": "Durable 360-degree lay-flat metallic spiral"
+    },
+    {
+      "id": "binding-hardbound",
+      "name": "Hardbound Book Binding",
+      "price": 180,
+      "pricingType": "per-copy",
+      "description": "Gold-stamped rigid hard cover for theses & reports"
+    },
+    {
+      "id": "stapling-corner",
+      "name": "Corner Stapling",
+      "price": 2,
+      "pricingType": "per-copy",
+      "description": "Single heavy-duty corner staple"
+    },
+    {
+      "id": "stapling-booklet",
+      "name": "Saddle-Stitch Stapling (Booklet)",
+      "price": 5,
+      "pricingType": "per-copy",
+      "description": "Center folded spine stapling"
+    },
+    {
+      "id": "cutting-trim",
+      "name": "Precision Cutting / Trimming",
+      "price": 15,
+      "pricingType": "fixed",
+      "description": "Guillotine clean cut to custom dimensions"
+    },
+    {
+      "id": "layout-assistance",
+      "name": "Formatting / Layout Assistance",
+      "price": 50,
+      "pricingType": "fixed",
+      "description": "Staff inspection and page margins/column alignment aid"
+    }
+  ],
+  "discountCodes": [
+    {
+      "code": "PRINT10",
+      "type": "percent",
+      "value": 10,
+      "description": "10% Off Orders"
+    },
+    {
+      "code": "WELCOME50",
+      "type": "fixed",
+      "value": 50,
+      "description": "?50 Off First Order"
+    },
+    {
+      "code": "BULK15",
+      "type": "percent",
+      "value": 15,
+      "description": "15% Off Volume Orders"
+    }
+  ]
+}

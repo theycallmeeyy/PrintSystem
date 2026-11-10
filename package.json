@@ -1,0 +1,37 @@
+{
+  "name": "print-plus",
+  "version": "1.0.0",
+  "description": "Print Shop Order Management System",
+  "type": "module",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev:server": "node server/server.js",
+    "dev:client": "vite --host 127.0.0.1",
+    "dev": "concurrently --kill-others --names api,web \"npm:dev:server\" \"npm:dev:client\"",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^6.3.0",
+    "autoprefixer": "^10.6.2",
+    "clsx": "^2.1.1",
+    "cors": "^2.8.6",
+    "docx-preview": "^0.4.1",
+    "express": "^5.3.0",
+    "lucide-react": "^1.71.0",
+    "multer": "^2.5.0",
+    "postcss": "^8.5.32",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "socket.io": "^4.8.4",
+    "socket.io-client": "^4.8.4",
+    "tailwind-merge": "^3.7.0",
+    "tailwindcss": "^3.4.17",
+    "uuid": "^14.0.3",
+    "vite": "^8.3.7"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.7"
+  }
+}
