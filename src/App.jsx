@@ -6,6 +6,7 @@ import StaffDashboard from './components/StaffDashboard';
 import StaffPricingManagement from './components/StaffPricingManagement';
 import AdminLogin from './components/AdminLogin';
 import StaffAccountManagement from './components/StaffAccountManagement';
+import SuperAdminProgress from './components/SuperAdminProgress';
 import {
   fetchCurrentStaffUser,
   fetchPricing,
@@ -194,6 +195,15 @@ export default function App() {
                 {staffUser.role === 'super_admin' && (
                   <button
                     type="button"
+                    onClick={() => setAdminSection('progress')}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold ${adminSection === 'progress' ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 border border-slate-200'}`}
+                  >
+                    Printing Progress
+                  </button>
+                )}
+                {staffUser.role === 'super_admin' && (
+                  <button
+                    type="button"
                     onClick={() => setAdminSection('accounts')}
                     className={`px-4 py-2 rounded-xl text-xs font-bold ${adminSection === 'accounts' ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 border border-slate-200'}`}
                   >
@@ -217,6 +227,9 @@ export default function App() {
             )}
             {adminSection === 'accounts' && staffUser.role === 'super_admin' && (
               <StaffAccountManagement />
+            )}
+            {adminSection === 'progress' && staffUser.role === 'super_admin' && (
+              <SuperAdminProgress onOpenQueue={() => setAdminSection('queue')} />
             )}
           </div>
         )}

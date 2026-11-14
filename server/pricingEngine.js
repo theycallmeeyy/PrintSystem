@@ -168,7 +168,7 @@ export const defaultPricing = {
   // Active Promo Discount Codes
   discountCodes: [
     { code: 'PRINT10', type: 'percent', value: 10, description: '10% Off Orders' },
-    { code: 'WELCOME50', type: 'fixed', value: 50, description: '₱50 Off First Order' },
+    { code: 'WELCOME50', type: 'fixed', value: 50, description: '50₱ Off First Order' },
     { code: 'BULK15', type: 'percent', value: 15, description: '15% Off Volume Orders' }
   ]
 };
@@ -261,12 +261,12 @@ export function calculatePricing(orderData, pricing = defaultPricing) {
         if (service.pricingType === 'per-sheet') {
           quantityUsed = physicalSheets;
           charge = service.price * physicalSheets;
-          unitDesc = `${physicalSheets} sheets × ₱${service.price.toFixed(2)}`;
+          unitDesc = `${physicalSheets} sheets × ${service.price.toFixed(2)}₱`;
         } else if (service.pricingType === 'per-copy') {
           const count = jobType.isPerSheetProduct ? 1 : safeCopies;
           quantityUsed = count;
           charge = service.price * count;
-          unitDesc = `${count} copies × ₱${service.price.toFixed(2)}`;
+          unitDesc = `${count} copies × ${service.price.toFixed(2)}₱`;
         } else {
           // fixed
           quantityUsed = 1;
@@ -324,7 +324,7 @@ export function calculatePricing(orderData, pricing = defaultPricing) {
         appliedDiscountDesc = `${codeMatch.code} (${codeMatch.value}% off)`;
       } else {
         discountAmount = Number(codeMatch.value.toFixed(2));
-        appliedDiscountDesc = `${codeMatch.code} (₱${codeMatch.value.toFixed(2)} off)`;
+        appliedDiscountDesc = `${codeMatch.code} (${codeMatch.value.toFixed(2)}₱ off)`;
       }
     }
   }

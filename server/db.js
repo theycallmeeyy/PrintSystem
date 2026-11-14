@@ -535,7 +535,7 @@ export class Database {
     order.statusHistory.push({
       status: order.status,
       timestamp: new Date().toISOString(),
-      note: `Revised quotation proposed: ₱${parsedAmount.toFixed(2)} (${reason})`
+      note: `Revised quotation proposed: ${parsedAmount.toFixed(2)}₱ (${reason})`
     });
 
     this.saveOrders(this.orders);
@@ -555,7 +555,7 @@ export class Database {
     order.statusHistory.push({
       status: order.status,
       timestamp: new Date().toISOString(),
-      note: `Customer approved revised quotation of ₱${order.quoteAdjustment.revisedGrandTotal.toFixed(2)}`
+      note: `Customer approved revised quotation of ${order.quoteAdjustment.revisedGrandTotal.toFixed(2)}₱`
     });
 
     this.saveOrders(this.orders);

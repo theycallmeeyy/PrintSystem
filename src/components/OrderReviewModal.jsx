@@ -1,5 +1,6 @@
-import React from 'react';
-import { X, CheckCircle2, FileText, User, Printer, Sliders, DollarSign, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, CheckCircle2, FileText, User, Printer, Sliders, DollarSign, AlertCircle, Eye } from 'lucide-react';
+import DocumentPreview from './DocumentPreview';
 
 export default function OrderReviewModal({
   isOpen,
@@ -9,17 +10,19 @@ export default function OrderReviewModal({
   orderData,
   pricingCalculation
 }) {
+  const [isFilePreviewOpen, setIsFilePreviewOpen] = useState(false);
+  const [previewFileIndex, setPreviewFileIndex] = useState(0);
+
   if (!isOpen) return null;
 
   const { customer, job, formatting, files, isRush, isDelivery, deliveryAddress, paymentMethod } = orderData;
   const { costs, calculationMeta, lineItems } = pricingCalculation || {};
-  const symbol = pricingCalculation?.currencySymbol || '₱';
-
   const formatPHP = (num) => {
-    return `${symbol}${(num || 0).toLocaleString('en-US', {
+    const amount = (num || 0).toLocaleString('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
-    })}`;
+    });
+    return <>{amount}<span className="font-sans">₱</span></>;
   };
 
   return (
@@ -143,6 +146,10 @@ export default function OrderReviewModal({
                   <span className="font-semibold text-slate-800 capitalize">{formatting.fontSize} • {formatting.fontStyle}</span>
                 </div>
                 <div className="flex justify-between">
+                  <span>Page Border:</span>
+                  <span className="font-semibold text-slate-800 capitalize">{formatting.pageBorder || 'none'}</span>
+                </div>
+                <div className="flex justify-between">
                   <span>Alignment & Spacing:</span>
                   <span className="font-semibold text-slate-800 capitalize">{formatting.alignment} • {formatting.lineSpacing}x</span>
                 </div>
@@ -157,7 +164,18 @@ export default function OrderReviewModal({
           </div>
 
           {/* Uploaded File */}
-          <div className="border border-slate-200 rounded-xl p-3 bg-slate-50/50 flex items-center justify-between">
+          <button
+            type="button"
+            disabled={!files?.length}
+            onClick={() => {
+              setPreviewFileIndex(0);
+              setIsFilePreviewOpen(true);
+            }}
+            className={`w-full border border-slate-200 rounded-xl p-3 bg-slate-50/50 flex items-center justify-between text-left transition ${
+              files?.length ? 'hover:border-brand-300 hover:bg-brand-50/50 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500' : 'cursor-default'
+            }`}
+            aria-label={files?.length ? `Preview uploaded file ${files[0].originalName}` : 'No file uploaded'}
+          >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-brand-100 text-brand-700 flex items-center justify-center font-bold">
                 <FileText className="w-5 h-5" />
@@ -176,7 +194,7 @@ export default function OrderReviewModal({
             <span className="text-[11px] bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full border border-emerald-200 font-medium">
               Original Preserved
             </span>
-          </div>
+          </button>
 
           {/* Pricing & Fees Breakdown */}
           <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
@@ -256,7 +274,39 @@ export default function OrderReviewModal({
           </button>
         </div>
       </div>
+
+      {isFilePreviewOpen && files?.length > 0 && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/75 p-3 backdrop-blur-sm sm:p-6">
+          <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-4 py-3 sm:px-6">
+              <div className="flex min-w-0 items-center gap-2">
+                <Eye className="h-5 w-5 shrink-0 text-brand-600" />
+                <h3 className="truncate text-sm font-bold text-slate-900 sm:text-base">
+                  Preview: {files[previewFileIndex]?.originalName || 'Uploaded document'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsFilePreviewOpen(false)}
+                className="shrink-0 rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                aria-label="Close document preview"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="min-h-0 overflow-y-auto p-3 sm:p-5">
+              <DocumentPreview
+                file={files[0]}
+                files={files}
+                formatting={formatting}
+                job={job}
+                selectedFileIndex={previewFileIndex}
+                onSelectedFileIndexChange={setPreviewFileIndex}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

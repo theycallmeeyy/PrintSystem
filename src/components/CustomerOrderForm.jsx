@@ -15,7 +15,7 @@ export default function CustomerOrderForm({
   onOrderCreated,
   onTrackOrder
 }) {
-  // Active Wizard Step (1: Service & File, 2: Paper & Print, 3: Formatting, 4: Review & Contact)
+  // Active wizard step (1: Upload & Layout, 2: Paper & Quantity, 3: Details & Review)
   const [activeStep, setActiveStep] = useState(1);
 
   // Form state
@@ -48,6 +48,7 @@ export default function CustomerOrderForm({
     columns: 1,
     alignment: 'left',
     lineSpacing: 1.15,
+    pageBorder: 'none',
     customDocumentPages: ['']
   });
 
@@ -60,18 +61,22 @@ export default function CustomerOrderForm({
   const [appliedPromo, setAppliedPromo] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
 
-  // Preview & Mobile Tab state ('preview' | 'summary')
-  const [mobileSideTab, setMobileSideTab] = useState('summary');
+  const [isDraggingFiles, setIsDraggingFiles] = useState(false);
+  const [previewFileIndex, setPreviewFileIndex] = useState(0);
+  const [activeServiceSlide, setActiveServiceSlide] = useState(0);
 
   // Real-time calculated pricing
   const [pricingCalculation, setPricingCalculation] = useState(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [formError, setFormError] = useState(null);
   const [submittedOrder, setSubmittedOrder] = useState(null);
 
   const fileInputRef = useRef(null);
+  const documentPreviewRef = useRef(null);
+  const serviceCarouselRef = useRef(null);
 
   // Recalculate price whenever parameters change
   useEffect(() => {
@@ -111,9 +116,7 @@ export default function CustomerOrderForm({
     return () => { active = false; };
   }, [job, isRush, isDelivery, appliedPromo, pricingConfig]);
 
-  // Handle file uploads
-  const handleFileUpload = async (e) => {
-    const files = e.target.files;
+  const uploadSelectedFiles = async (files) => {
     if (!files || files.length === 0) return;
 
     setIsUploading(true);
@@ -135,8 +138,48 @@ export default function CustomerOrderForm({
     }
   };
 
+  const handleFileUpload = (e) => {
+    uploadSelectedFiles(e.target.files);
+  };
+
+  const handleFileDrop = (e) => {
+    e.preventDefault();
+    setIsDraggingFiles(false);
+    uploadSelectedFiles(e.dataTransfer.files);
+  };
+
   const removeFile = (index) => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const scrollToService = (index) => {
+    const serviceCount = pricingConfig?.jobTypes?.length || 0;
+    if (!serviceCount || !serviceCarouselRef.current) return;
+
+    const nextIndex = Math.max(0, Math.min(serviceCount - 1, index));
+    const card = serviceCarouselRef.current.children[nextIndex];
+    if (!card) return;
+
+    serviceCarouselRef.current.scrollTo({ left: card.offsetLeft, behavior: 'smooth' });
+    setActiveServiceSlide(nextIndex);
+  };
+
+  const handleServiceCarouselScroll = () => {
+    const carousel = serviceCarouselRef.current;
+    if (!carousel) return;
+
+    const carouselCenter = carousel.scrollLeft + carousel.clientWidth / 2;
+    let nearestIndex = 0;
+    let nearestDistance = Infinity;
+    Array.from(carousel.children).forEach((card, index) => {
+      const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+      const distance = Math.abs(carouselCenter - cardCenter);
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestIndex = index;
+      }
+    });
+    setActiveServiceSlide(nearestIndex);
   };
 
   const handleApplyPromo = () => {
@@ -147,19 +190,9 @@ export default function CustomerOrderForm({
     setAppliedPromo(discountCode.trim().toUpperCase());
   };
 
-  const applyMarginPreset = (preset) => {
-    if (preset === 'normal') {
-      setFormatting(f => ({ ...f, margins: { top: 1.0, bottom: 1.0, left: 1.0, right: 1.0, unit: 'in' } }));
-    } else if (preset === 'narrow') {
-      setFormatting(f => ({ ...f, margins: { top: 0.5, bottom: 0.5, left: 0.5, right: 0.5, unit: 'in' } }));
-    } else if (preset === 'wide') {
-      setFormatting(f => ({ ...f, margins: { top: 1.5, bottom: 1.5, left: 1.5, right: 1.5, unit: 'in' } }));
-    }
-  };
-
   const validateStep = (step) => {
     setFormError(null);
-    if (step === 4) {
+    if (step === 3) {
       if (isDelivery && !deliveryAddress.trim()) {
         setFormError('Please provide a complete delivery address.');
         return false;
@@ -170,9 +203,8 @@ export default function CustomerOrderForm({
 
   const goToNextStep = () => {
     if (validateStep(activeStep)) {
-      const nextStep = Math.min(4, activeStep + 1);
+      const nextStep = Math.min(3, activeStep + 1);
       setActiveStep(nextStep);
-      setMobileSideTab(nextStep === 3 ? 'preview' : 'summary');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -181,7 +213,6 @@ export default function CustomerOrderForm({
     setFormError(null);
     const previousStep = Math.max(1, activeStep - 1);
     setActiveStep(previousStep);
-    setMobileSideTab(previousStep === 3 ? 'preview' : 'summary');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -229,7 +260,7 @@ export default function CustomerOrderForm({
   };
 
   const isPerSheetProduct = pricingCalculation?.calculationMeta?.isPerSheetProduct;
-  const grandTotal = pricingCalculation?.costs?.grandTotal || 0;
+  const showRightRail = activeStep === 3;
 
   // Render Order Success Screen
   if (submittedOrder) {
@@ -255,7 +286,7 @@ export default function CustomerOrderForm({
         </div>
 
         <p className="text-xs text-slate-500 max-w-md mx-auto mb-6">
-          Estimated Total: <strong className="text-slate-800 font-mono text-sm">₱{submittedOrder.pricingSnapshot?.costs?.grandTotal?.toFixed(2)}</strong>. You can follow live updates with the colored status indicator without refreshing.
+          Estimated Total: <strong className="text-slate-800 font-mono text-sm">{submittedOrder.pricingSnapshot?.costs?.grandTotal?.toFixed(2)}<span className="font-sans">₱</span></strong>. You can follow live updates with the colored status indicator without refreshing.
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-3">
@@ -285,60 +316,88 @@ export default function CustomerOrderForm({
   }
 
   const steps = [
-    { number: 1, title: 'Service & File', subtitle: 'Choose job & upload' },
+    { number: 1, title: 'Upload & Layout', subtitle: 'Add a file & preview' },
     { number: 2, title: 'Paper & Quantity', subtitle: 'Sizes, stock & sheets' },
-    { number: 3, title: 'Formatting', subtitle: 'Layout & margins' },
-    { number: 4, title: 'Details & Review', subtitle: 'Contact & submit' },
+    { number: 3, title: 'Details & Review', subtitle: 'Contact & submit' },
   ];
+  const jobTypes = pricingConfig?.jobTypes || [];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-      {/* Top Stepper Navigation (Modern & Intuitive) */}
+      {/* Modern dropdown sidebar step navigation */}
       <div className="mb-8">
-        <div className="bg-white rounded-2xl border border-slate-200/90 p-3 sm:p-4 shadow-xs">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {steps.map(step => {
-              const isActive = activeStep === step.number;
-              const isPast = activeStep > step.number;
-              return (
-                <button
-                  key={step.number}
-                  type="button"
-                  onClick={() => {
-                    if (step.number < activeStep || validateStep(activeStep)) {
-                      setActiveStep(step.number);
-                      setMobileSideTab(step.number === 3 ? 'preview' : 'summary');
-                    }
-                  }}
-                  className={`flex items-center gap-3 p-2.5 sm:p-3 rounded-xl text-left transition-all ${
-                    isActive
-                      ? 'bg-brand-50 border border-brand-200 text-brand-900 shadow-xs'
-                      : isPast
-                      ? 'bg-slate-50 text-slate-700 hover:bg-slate-100'
-                      : 'text-slate-400 hover:text-slate-600 opacity-75'
-                  }`}
-                >
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 transition-colors ${
-                    isActive
-                      ? 'bg-brand-600 text-white shadow-xs'
-                      : isPast
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-slate-200 text-slate-500'
-                  }`}>
-                    {isPast ? <Check className="w-4 h-4 stroke-[2.5]" /> : step.number}
-                  </div>
-                  <div className="truncate">
-                    <span className={`block text-xs font-bold leading-tight ${isActive ? 'text-brand-900' : 'text-slate-800'}`}>
-                      {step.title}
-                    </span>
-                    <span className="block text-[10px] text-slate-400 truncate hidden sm:block">
-                      {step.subtitle}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+        <div className="bg-white rounded-[28px] border border-slate-200/90 shadow-[0_14px_30px_rgba(15,23,42,0.06)] overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setIsSidebarOpen(open => !open)}
+            className="w-full flex items-center justify-between gap-4 bg-gradient-to-r from-slate-50 to-white px-4 py-4 sm:px-5 text-left transition hover:bg-slate-50"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-600 text-sm font-black text-white shadow-lg shadow-brand-500/25">
+                {activeStep}
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Current step</p>
+                <p className="truncate text-base font-bold text-slate-900">{steps[activeStep - 1].title}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-slate-500">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.12em]">Menu</span>
+              <ChevronRight className={`h-4 w-4 transition-transform ${isSidebarOpen ? 'rotate-90' : ''}`} />
+            </div>
+          </button>
+
+          {isSidebarOpen && (
+            <div className="border-t border-slate-200/80 bg-slate-50/60 p-3 sm:p-4">
+              <div className="space-y-2">
+                {steps.map(step => {
+                  const isActive = activeStep === step.number;
+                  const isPast = activeStep > step.number;
+                  return (
+                    <button
+                      key={step.number}
+                      type="button"
+                      onClick={() => {
+                        if (step.number < activeStep || validateStep(activeStep)) {
+                          setActiveStep(step.number);
+                        }
+                      }}
+                      className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition-all ${
+                        isActive
+                          ? 'border-brand-200 bg-brand-50 text-brand-900 shadow-[inset_0_0_0_1px_rgba(14,165,233,0.1)]'
+                          : isPast
+                          ? 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-100'
+                          : 'border-transparent bg-transparent text-slate-400 hover:bg-white hover:text-slate-600'
+                      }`}
+                    >
+                      <div className={`flex h-9 w-9 items-center justify-center rounded-xl text-xs font-black shrink-0 ${
+                        isActive
+                          ? 'bg-brand-600 text-white shadow-md shadow-brand-500/25'
+                          : isPast
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-slate-200 text-slate-500'
+                      }`}>
+                        {isPast ? <Check className="h-4 w-4 stroke-[2.5]" /> : step.number}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={`block text-sm font-bold truncate ${isActive ? 'text-brand-900' : 'text-slate-800'}`}>
+                            {step.title}
+                          </span>
+                          {isPast && <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-emerald-700">Done</span>}
+                        </div>
+                        <span className="mt-0.5 block text-[11px] text-slate-400 truncate">
+                          {step.subtitle}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -351,69 +410,152 @@ export default function CustomerOrderForm({
 
       {/* Main 2-Column Responsive Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
-        {/* Left Column: Active Step Form (7 cols) */}
-        <div className="lg:col-span-7 space-y-6">
+        {/* Left Column: Active Step Form */}
+        <div className={`${showRightRail ? 'lg:col-span-7' : 'lg:col-span-12'} space-y-6`}>
 
-          {/* STEP 1: SERVICE & FILE UPLOAD */}
+          {/* STEP 1: UPLOAD & LAYOUT */}
           {activeStep === 1 && (
-            <div className="space-y-6 animate-in fade-in duration-200">
+            <div className="flex flex-col gap-6 animate-in fade-in duration-200">
               {/* Job Service Selection */}
-              <div className="bg-white rounded-3xl border border-slate-200/90 p-6 shadow-sm">
-                <div className="mb-4">
-                  <h2 className="text-base font-bold text-slate-900">1. Select Print Job Service</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">What type of document or product would you like to print today?</p>
+              <div className="order-3 bg-white rounded-3xl border border-slate-200/90 p-6 shadow-sm">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900">Choose a print service</h2>
+                    <p className="text-xs text-slate-500 mt-0.5">What type of document or product would you like to print today?</p>
+                  </div>
+                  {jobTypes.length > 1 && (
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => scrollToService(activeServiceSlide - 1)}
+                        disabled={activeServiceSlide === 0}
+                        aria-label="Previous print service"
+                        className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <ArrowLeft className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => scrollToService(activeServiceSlide + 1)}
+                        disabled={activeServiceSlide >= jobTypes.length - 1}
+                        aria-label="Next print service"
+                        className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                  {(pricingConfig?.jobTypes || []).map(j => {
+                <div
+                  ref={serviceCarouselRef}
+                  onScroll={handleServiceCarouselScroll}
+                  className="relative -mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-3 scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                  aria-label="Print services"
+                >
+                  {jobTypes.map((j, index) => {
                     const isSelected = job.jobTypeId === j.id;
                     const selectedPaperSize = pricingConfig?.paperSizes?.find(size => size.id === job.paperSizeId);
                     const configuredDocumentRate = selectedPaperSize?.documentRates?.[job.colorModeId];
                     const displayRate = j.id === 'document' && Number.isFinite(configuredDocumentRate)
-                      ? `₱${configuredDocumentRate.toFixed(2)} / page print`
-                      : `₱${j.baseRatePerPage?.toFixed(2)} ${j.isPerSheetProduct ? '/ item' : '/ page'}`;
+                      ? <>{configuredDocumentRate.toFixed(2)}<span className="font-sans">₱</span> / page print</>
+                      : <>{j.baseRatePerPage?.toFixed(2)}<span className="font-sans">₱</span> {j.isPerSheetProduct ? '/ item' : '/ page'}</>;
                     return (
                       <button
                         key={j.id}
                         type="button"
-                        onClick={() => setJob({ ...job, jobTypeId: j.id })}
-                        className={`p-3.5 rounded-2xl border text-left transition-all relative ${
+                        onClick={() => {
+                          setJob(prev => ({ ...prev, jobTypeId: j.id }));
+                          setActiveServiceSlide(index);
+                        }}
+                        className={`relative flex min-h-36 w-[84%] shrink-0 snap-start flex-col justify-center rounded-2xl border p-4 text-left transition-all duration-200 sm:w-[48%] lg:w-[32%] ${
                           isSelected
-                            ? 'border-brand-600 bg-brand-50/70 ring-2 ring-brand-500/20 text-brand-900 shadow-xs'
-                            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/70 text-slate-700'
+                            ? 'border-brand-500 bg-gradient-to-br from-brand-50 to-white text-brand-900 shadow-[0_8px_24px_rgba(2,132,199,0.12)] ring-1 ring-brand-400/50'
+                            : 'border-slate-200 bg-white text-slate-700 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md'
                         }`}
+                        aria-pressed={isSelected}
                       >
                         {isSelected && (
-                          <span className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-brand-600 text-white flex items-center justify-center text-[10px]">
+                          <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 text-white shadow-sm">
                             ✓
                           </span>
                         )}
-                        <span className="font-bold text-xs block text-slate-900">{j.name}</span>
-                        <span className="text-[11px] text-slate-500 block line-clamp-1 mt-0.5">{j.description}</span>
-                        <span className="text-[11px] font-mono text-brand-700 font-bold block mt-1.5">
+                        <span className="block pr-6 text-sm font-bold text-slate-900">{j.name}</span>
+                        <span className="mt-1 block line-clamp-2 min-h-9 text-xs leading-relaxed text-slate-500">{j.description}</span>
+                        <span className="mt-3 block text-xs font-bold text-brand-700">
                           {displayRate}
                         </span>
                       </button>
                     );
                   })}
                 </div>
+                {jobTypes.length > 1 && (
+                  <div className="mt-1 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5" aria-label="Choose print service slide">
+                      {jobTypes.map((service, index) => (
+                        <button
+                          key={service.id}
+                          type="button"
+                          onClick={() => scrollToService(index)}
+                          aria-label={`Show ${service.name}`}
+                          aria-current={activeServiceSlide === index ? 'true' : undefined}
+                          className={`h-1.5 rounded-full transition-all ${
+                            activeServiceSlide === index ? 'w-6 bg-brand-600' : 'w-1.5 bg-slate-300 hover:bg-slate-400'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-[10px] font-medium tabular-nums text-slate-400">
+                      {activeServiceSlide + 1} / {jobTypes.length}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* File Upload Box */}
-              <div className="bg-white rounded-3xl border border-slate-200/90 p-6 shadow-sm">
+              <div className="order-1 bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="text-base font-bold text-slate-900">2. Upload Design or Document</h2>
-                    <p className="text-xs text-slate-500 mt-0.5">Original files are stored securely without alteration.</p>
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-50 text-xs font-black text-brand-700 ring-1 ring-brand-100">01</span>
+                      <h2 className="text-base font-bold text-slate-900">Upload a design or document</h2>
+                    </div>
+                    <p className="ml-[42px] text-xs text-slate-500 mt-0.5">Start by adding the file you want us to print. Your original stays unchanged.</p>
                   </div>
-                  <span className="text-[11px] bg-slate-100 text-slate-600 font-mono px-2 py-0.5 rounded-full">
+                  <span className="hidden sm:inline-flex text-[11px] bg-slate-100 text-slate-600 font-mono px-2.5 py-1 rounded-full">
                     Max 1000MB per file
                   </span>
                 </div>
 
                 <div
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Select or drop design and document files to upload"
                   onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-slate-300 hover:border-brand-500 rounded-2xl p-6 text-center cursor-pointer transition-colors bg-slate-50/60 hover:bg-brand-50/20 group"
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      fileInputRef.current?.click();
+                    }
+                  }}
+                  onDragEnter={e => {
+                    e.preventDefault();
+                    setIsDraggingFiles(true);
+                  }}
+                  onDragOver={e => {
+                    e.preventDefault();
+                    setIsDraggingFiles(true);
+                  }}
+                  onDragLeave={e => {
+                    e.preventDefault();
+                    setIsDraggingFiles(false);
+                  }}
+                  onDrop={handleFileDrop}
+                  className={`group cursor-pointer rounded-2xl border-2 border-dashed p-7 sm:p-9 text-center transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-brand-100 ${
+                    isDraggingFiles
+                      ? 'border-brand-500 bg-brand-50 shadow-inner'
+                      : 'border-slate-300 bg-slate-50/70 hover:border-brand-400 hover:bg-brand-50/40'
+                  }`}
                 >
                   <input
                     ref={fileInputRef}
@@ -423,15 +565,16 @@ export default function CustomerOrderForm({
                     onChange={handleFileUpload}
                     className="hidden"
                   />
-                  <div className="w-12 h-12 bg-white rounded-2xl shadow-xs border border-slate-200 flex items-center justify-center mx-auto mb-3 text-brand-600 group-hover:scale-105 transition-transform">
+                  <div className="w-14 h-14 bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center mx-auto mb-3 text-brand-600 group-hover:-translate-y-0.5 group-hover:shadow-md transition-all">
                     <Upload className="w-6 h-6" />
                   </div>
-                  <p className="font-bold text-sm text-slate-800">
-                    {isUploading ? 'Uploading file...' : 'Click to select or drag & drop files here'}
+                  <p className="font-bold text-sm sm:text-base text-slate-800">
+                    {isUploading ? 'Uploading your files…' : isDraggingFiles ? 'Drop your files to upload' : 'Choose a file or drag it here'}
                   </p>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-xs text-slate-500 mt-1.5">
                     Supports PDF, Word (DOCX/DOC), JPEG, PNG, WEBP, SVG
                   </p>
+                  <p className="sm:hidden text-[10px] text-slate-400 mt-2">Maximum 1000MB per file</p>
                 </div>
 
                 {/* Uploaded Files preview list */}
@@ -445,7 +588,15 @@ export default function CustomerOrderForm({
                         key={idx}
                         className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-200 text-xs"
                       >
-                        <div className="flex items-center gap-2.5 truncate">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPreviewFileIndex(idx);
+                            documentPreviewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }}
+                          className="flex min-w-0 flex-1 items-center gap-2.5 truncate text-left rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                          aria-label={`Preview ${f.originalName}`}
+                        >
                           <FileText className="w-5 h-5 text-brand-600 shrink-0" />
                           <div className="truncate">
                             <p className="font-bold text-slate-800 truncate">{f.originalName}</p>
@@ -453,7 +604,7 @@ export default function CustomerOrderForm({
                               {(f.size / 1024).toFixed(1)} KB • {f.mimetype || 'Document'}
                             </p>
                           </div>
-                        </div>
+                        </button>
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
@@ -475,6 +626,36 @@ export default function CustomerOrderForm({
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* Document layout preview */}
+              <div ref={documentPreviewRef} className="order-2 overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-sm scroll-mt-6">
+                <div className="flex items-start gap-3 border-b border-slate-100 px-5 py-4 sm:px-6">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-xs font-black text-indigo-700 ring-1 ring-indigo-100">02</span>
+                  <div className="min-w-0">
+                    <h2 className="text-base font-bold text-slate-900">Document layout preview</h2>
+                    <p className="mt-0.5 text-xs text-slate-500">Preview your file, then use the compact tools below the page to adjust your editable layout.</p>
+                  </div>
+                </div>
+                <div className="p-3 sm:p-4">
+                  <DocumentPreview
+                    file={uploadedFiles.length > 0 ? uploadedFiles[0] : null}
+                    files={uploadedFiles}
+                    selectedFileIndex={previewFileIndex}
+                    onSelectedFileIndexChange={setPreviewFileIndex}
+                    formatting={formatting}
+                    job={job}
+                    paperSizes={pricingConfig?.paperSizes || []}
+                    onPaperSizeChange={paperSizeId => setJob(prev => ({ ...prev, paperSizeId }))}
+                    onTextChange={(pages, pageRuns) => setFormatting(prev => ({
+                      ...prev,
+                      customDocumentPages: pages,
+                      customDocumentPageRuns: pageRuns
+                    }))}
+                    onFormattingChange={setFormatting}
+                    onPageCountChange={pageCount => setJob(prev => ({ ...prev, pagesPerCopy: pageCount }))}
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -505,7 +686,7 @@ export default function CustomerOrderForm({
                       >
                         <span className="block text-xs font-bold">{s.id}</span>
                         <span className="block text-[10px] text-slate-500 mt-0.5">
-                          {s.surcharge > 0 ? `+₱${s.surcharge.toFixed(2)}` : 'Standard'}
+                          {s.surcharge > 0 ? <>+{s.surcharge.toFixed(2)}<span className="font-sans">₱</span></> : 'Standard'}
                         </span>
                       </button>
                     );
@@ -582,7 +763,7 @@ export default function CustomerOrderForm({
                             <span className="block text-[11px] text-slate-500">{m.description}</span>
                           </div>
                           <span className="text-xs font-mono font-bold text-slate-900 pl-2 shrink-0">
-                            +₱{m.pricePerSheet?.toFixed(2)}/sh
+                            +{m.pricePerSheet?.toFixed(2)}<span className="font-sans">₱</span>/sh
                           </span>
                         </button>
                       );
@@ -614,8 +795,8 @@ export default function CustomerOrderForm({
                             <span className="block text-xs font-bold">{c.name.split(' ')[0]}</span>
                             <span className="block text-[10px] text-slate-500">
                               {job.jobTypeId === 'document' && Number.isFinite(documentRate)
-                                ? `₱${documentRate.toFixed(2)}/page print`
-                                : c.surchargePerPage > 0 ? `+₱${c.surchargePerPage.toFixed(2)}/p` : 'Standard'}
+                                ? <>{documentRate.toFixed(2)}<span className="font-sans">₱</span>/page print</>
+                                : c.surchargePerPage > 0 ? <>+{c.surchargePerPage.toFixed(2)}<span className="font-sans">₱</span>/p</> : 'Standard'}
                             </span>
                           </button>
                         );
@@ -719,209 +900,8 @@ export default function CustomerOrderForm({
             </div>
           )}
 
-          {/* STEP 3: FORMATTING & FINISHING */}
+          {/* STEP 3: DETAILS, REVIEW & SUBMIT */}
           {activeStep === 3 && (
-            <div className="space-y-6 animate-in fade-in duration-200">
-              {/* Document Formatting */}
-              <div className="bg-white rounded-3xl border border-slate-200/90 p-6 shadow-sm space-y-5">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">Document Layout & Typographic Preferences</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">Configure how you'd like our commercial print technicians to calibrate your document layout.</p>
-                </div>
-
-                {/* Orientation & Columns */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-2">Orientation</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {['portrait', 'landscape'].map(o => (
-                        <button
-                          key={o}
-                          type="button"
-                          onClick={() => setFormatting({ ...formatting, orientation: o })}
-                          className={`py-2 px-3 rounded-xl border text-center capitalize transition-all text-xs font-bold ${
-                            formatting.orientation === o
-                              ? 'border-brand-600 bg-brand-50 text-brand-900 ring-1 ring-brand-500 shadow-xs'
-                              : 'border-slate-200 hover:bg-slate-50 text-slate-700'
-                          }`}
-                        >
-                          {o}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-2">Columns</label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[1, 2, 3].map(c => (
-                        <button
-                          key={c}
-                          type="button"
-                          onClick={() => setFormatting({ ...formatting, columns: c })}
-                          className={`py-2 px-2 rounded-xl border text-center transition-all text-xs font-bold ${
-                            formatting.columns === c
-                              ? 'border-brand-600 bg-brand-50 text-brand-900 ring-1 ring-brand-500 shadow-xs'
-                              : 'border-slate-200 hover:bg-slate-50 text-slate-700'
-                          }`}
-                        >
-                          {c} Col{c > 1 ? 's' : ''}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Typography: Family, Size, Style */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-100">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1.5">Font Family</label>
-                    <select
-                      value={formatting.fontFamily}
-                      onChange={e => setFormatting({ ...formatting, fontFamily: e.target.value })}
-                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300"
-                    >
-                      <option value="Arial">Arial (Sans-serif)</option>
-                      <option value="Times New Roman">Times New Roman (Serif)</option>
-                      <option value="Calibri">Calibri (Standard)</option>
-                      <option value="Roboto">Roboto (Modern)</option>
-                      <option value="Georgia">Georgia (Editorial)</option>
-                      <option value="Courier New">Courier New (Mono)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1.5">Font Size</label>
-                    <select
-                      value={formatting.fontSize}
-                      onChange={e => setFormatting({ ...formatting, fontSize: e.target.value })}
-                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300"
-                    >
-                      <option value="10pt">10 pt (Compact)</option>
-                      <option value="11pt">11 pt (Standard)</option>
-                      <option value="12pt">12 pt (Academic)</option>
-                      <option value="14pt">14 pt (Large Print)</option>
-                      <option value="16pt">16 pt (Display)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1.5">Font Style</label>
-                    <select
-                      value={formatting.fontStyle}
-                      onChange={e => setFormatting({ ...formatting, fontStyle: e.target.value })}
-                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300"
-                    >
-                      <option value="regular">Regular</option>
-                      <option value="bold">Bold</option>
-                      <option value="italic">Italic</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Margins */}
-                <div className="pt-2 border-t border-slate-100">
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-bold text-slate-800">
-                      Margins ({formatting.margins.unit})
-                    </label>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] text-slate-400">Presets:</span>
-                      <button
-                        type="button"
-                        onClick={() => applyMarginPreset('normal')}
-                        className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md font-medium"
-                      >
-                        Normal 1"
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => applyMarginPreset('narrow')}
-                        className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md font-medium"
-                      >
-                        Narrow 0.5"
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => applyMarginPreset('wide')}
-                        className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md font-medium"
-                      >
-                        Wide 1.5"
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-4 gap-2">
-                    {['top', 'bottom', 'left', 'right'].map(side => (
-                      <div key={side}>
-                        <label className="block text-[10px] text-slate-500 capitalize mb-0.5">{side}</label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          min="0.2"
-                          max="3.0"
-                          value={formatting.margins[side]}
-                          onChange={e => setFormatting({
-                            ...formatting,
-                            margins: { ...formatting.margins, [side]: parseFloat(e.target.value) || 0.5 }
-                          })}
-                          className="w-full px-2 py-1.5 text-xs rounded-lg border border-slate-300 text-center font-mono"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Alignment & Line Spacing */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1.5">Text Alignment</label>
-                    <div className="grid grid-cols-4 gap-1.5">
-                      {['left', 'center', 'right', 'justify'].map(a => (
-                        <button
-                          key={a}
-                          type="button"
-                          onClick={() => setFormatting({ ...formatting, alignment: a })}
-                          className={`py-1.5 px-2 rounded-lg border text-center capitalize text-xs ${
-                            formatting.alignment === a
-                              ? 'border-brand-600 bg-brand-50 font-bold text-brand-900 ring-1 ring-brand-500'
-                              : 'border-slate-200 hover:bg-slate-50 text-slate-600'
-                          }`}
-                        >
-                          {a}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1.5">Line Spacing</label>
-                    <div className="grid grid-cols-4 gap-1.5">
-                      {[1.0, 1.15, 1.5, 2.0].map(s => (
-                        <button
-                          key={s}
-                          type="button"
-                          onClick={() => setFormatting({ ...formatting, lineSpacing: s })}
-                          className={`py-1.5 px-2 rounded-lg border text-center text-xs ${
-                            formatting.lineSpacing === s
-                              ? 'border-brand-600 bg-brand-50 font-bold text-brand-900 ring-1 ring-brand-500'
-                              : 'border-slate-200 hover:bg-slate-50 text-slate-600'
-                          }`}
-                        >
-                          {s}x
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-            </div>
-          )}
-
-          {/* STEP 4: DETAILS, REVIEW & SUBMIT */}
-          {activeStep === 4 && (
             <div className="space-y-6 animate-in fade-in duration-200">
               {/* Customer Contact Information */}
               <div className="bg-white rounded-3xl border border-slate-200/90 p-6 shadow-sm space-y-4">
@@ -1011,7 +991,7 @@ export default function CustomerOrderForm({
                       />
                       <div>
                         <span className="font-bold text-xs text-slate-900 block">Courier Delivery (Optional)</span>
-                        <span className="text-[11px] text-slate-500">Doorstep delivery (+₱80.00). Leave unchecked for in-store pickup.</span>
+                        <span className="text-[11px] text-slate-500">Doorstep delivery (+80.00₱). Leave unchecked for in-store pickup.</span>
                       </div>
                     </div>
                   </label>
@@ -1089,7 +1069,7 @@ export default function CustomerOrderForm({
               </button>
             ) : <div />}
 
-            {activeStep < 4 ? (
+            {activeStep < 3 && (
               <button
                 type="button"
                 onClick={goToNextStep}
@@ -1098,59 +1078,12 @@ export default function CustomerOrderForm({
                 <span>Continue to {steps[activeStep].title}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleReviewOrder}
-                className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm shadow-md transition flex items-center gap-2"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Order Now</span>
-              </button>
             )}
           </div>
         </div>
 
-        {/* Right Column: Sticky Live Preview & Real-Time Price Summary (5 cols) */}
-        <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-20">
-          {/* Mobile Tab Switcher (Preview vs Price Breakdown) */}
-          <div className="flex lg:hidden bg-slate-200 p-1 rounded-xl text-xs font-bold">
-            <button
-              type="button"
-              onClick={() => setMobileSideTab('summary')}
-              className={`flex-1 py-1.5 rounded-lg transition ${
-                mobileSideTab === 'summary' ? 'bg-white text-brand-700 shadow-xs' : 'text-slate-600'
-              }`}
-            >
-              Order Cost (₱{grandTotal.toFixed(2)})
-            </button>
-            <button
-              type="button"
-              onClick={() => setMobileSideTab('preview')}
-              className={`flex-1 py-1.5 rounded-lg transition ${
-                mobileSideTab === 'preview' ? 'bg-white text-brand-700 shadow-xs' : 'text-slate-600'
-              }`}
-            >
-              Document Layout Simulation
-            </button>
-          </div>
-
-          {/* Desktop shows both, Mobile toggles */}
-          <div className={`space-y-6 ${mobileSideTab === 'preview' ? 'block' : 'hidden lg:block'}`}>
-            <DocumentPreview
-              file={uploadedFiles.length > 0 ? uploadedFiles[0] : null}
-              files={uploadedFiles}
-              formatting={formatting}
-              job={job}
-              onTextChange={(pages) => setFormatting(prev => ({ ...prev, customDocumentPages: pages }))}
-              onPageCountChange={(pageCount) => setJob(prev => ({
-                ...prev,
-                pagesPerCopy: pageCount
-              }))}
-            />
-          </div>
-
-          <div className={`${mobileSideTab === 'summary' ? 'block' : 'hidden lg:block'}`}>
+        {showRightRail && (
+          <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-20">
             <PricingSummary
               pricingCalculation={pricingCalculation}
               isReviewMode={false}
@@ -1160,7 +1093,7 @@ export default function CustomerOrderForm({
               error={formError}
             />
           </div>
-        </div>
+        )}
       </div>
 
       {/* Full Pre-Submission Review Modal */}

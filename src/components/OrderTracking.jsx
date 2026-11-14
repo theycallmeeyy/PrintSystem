@@ -102,10 +102,11 @@ export default function OrderTracking({ initialOrderId = '', onNavigateToNewOrde
   };
 
   const formatPHP = (num) => {
-    return `₱${(num || 0).toLocaleString('en-US', {
+    const amount = (num || 0).toLocaleString('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
-    })}`;
+    });
+    return <>{amount}<span className="font-sans">₱</span></>;
   };
 
   return (
@@ -301,8 +302,8 @@ export default function OrderTracking({ initialOrderId = '', onNavigateToNewOrde
                     <p className="text-xs mt-0.5">
                       Reason: <span className="font-medium">{currentOrder.quoteAdjustment.reason}</span>
                     </p>
-                    <p className="text-xs font-mono mt-1">
-                      Original: ₱{currentOrder.quoteAdjustment.originalGrandTotal?.toFixed(2)} → <strong className="font-bold text-sm">Revised: ₱{currentOrder.quoteAdjustment.revisedGrandTotal?.toFixed(2)}</strong>
+                    <p className="text-xs mt-1">
+                      Original: <span className="font-mono">{currentOrder.quoteAdjustment.originalGrandTotal?.toFixed(2)}</span><span className="font-sans">₱</span> → <strong className="font-bold text-sm">Revised: <span className="font-mono">{currentOrder.quoteAdjustment.revisedGrandTotal?.toFixed(2)}</span><span className="font-sans">₱</span></strong>
                     </p>
                   </div>
                 </div>

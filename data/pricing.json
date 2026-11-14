@@ -10,14 +10,14 @@
       "id": "document",
       "name": "Document Printing",
       "description": "Standard black & white or color document prints",
-      "baseRatePerPage": 1.5,
+      "baseRatePerPage": 10,
       "isPerSheetProduct": false
     },
     {
       "id": "photocopy",
       "name": "Photocopying",
       "description": "Fast high-volume document duplication",
-      "baseRatePerPage": 1,
+      "baseRatePerPage": 5,
       "isPerSheetProduct": false
     },
     {
