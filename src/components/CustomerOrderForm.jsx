@@ -64,6 +64,8 @@ export default function CustomerOrderForm({
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
   const [previewFileIndex, setPreviewFileIndex] = useState(0);
   const [activeServiceSlide, setActiveServiceSlide] = useState(0);
+  const [activePaperSizeSlide, setActivePaperSizeSlide] = useState(0);
+  const [activeMaterialSlide, setActiveMaterialSlide] = useState(0);
 
   // Real-time calculated pricing
   const [pricingCalculation, setPricingCalculation] = useState(null);
@@ -77,6 +79,8 @@ export default function CustomerOrderForm({
   const fileInputRef = useRef(null);
   const documentPreviewRef = useRef(null);
   const serviceCarouselRef = useRef(null);
+  const paperSizeCarouselRef = useRef(null);
+  const materialCarouselRef = useRef(null);
 
   // Recalculate price whenever parameters change
   useEffect(() => {
@@ -180,6 +184,68 @@ export default function CustomerOrderForm({
       }
     });
     setActiveServiceSlide(nearestIndex);
+  };
+
+  const scrollToPaperSize = (index) => {
+    const paperSizes = pricingConfig?.paperSizes || [];
+    const carousel = paperSizeCarouselRef.current;
+    if (!paperSizes.length || !carousel) return;
+
+    const nextIndex = Math.max(0, Math.min(paperSizes.length - 1, index));
+    const card = carousel.children[nextIndex];
+    if (!card) return;
+
+    carousel.scrollTo({ left: card.offsetLeft, behavior: 'smooth' });
+    setActivePaperSizeSlide(nextIndex);
+  };
+
+  const handlePaperSizeCarouselScroll = () => {
+    const carousel = paperSizeCarouselRef.current;
+    if (!carousel) return;
+
+    const carouselCenter = carousel.scrollLeft + carousel.clientWidth / 2;
+    let nearestIndex = 0;
+    let nearestDistance = Infinity;
+    Array.from(carousel.children).forEach((card, index) => {
+      const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+      const distance = Math.abs(carouselCenter - cardCenter);
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestIndex = index;
+      }
+    });
+    setActivePaperSizeSlide(nearestIndex);
+  };
+
+  const scrollToMaterial = (index) => {
+    const materials = pricingConfig?.paperMaterials || [];
+    const carousel = materialCarouselRef.current;
+    if (!materials.length || !carousel) return;
+
+    const nextIndex = Math.max(0, Math.min(materials.length - 1, index));
+    const card = carousel.children[nextIndex];
+    if (!card) return;
+
+    carousel.scrollTo({ left: card.offsetLeft, behavior: 'smooth' });
+    setActiveMaterialSlide(nextIndex);
+  };
+
+  const handleMaterialCarouselScroll = () => {
+    const carousel = materialCarouselRef.current;
+    if (!carousel) return;
+
+    const carouselCenter = carousel.scrollLeft + carousel.clientWidth / 2;
+    let nearestIndex = 0;
+    let nearestDistance = Infinity;
+    Array.from(carousel.children).forEach((card, index) => {
+      const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+      const distance = Math.abs(carouselCenter - cardCenter);
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestIndex = index;
+      }
+    });
+    setActiveMaterialSlide(nearestIndex);
   };
 
   const handleApplyPromo = () => {
@@ -664,24 +730,54 @@ export default function CustomerOrderForm({
           {activeStep === 2 && (
             <div className="space-y-6 animate-in fade-in duration-200">
               <div className="bg-white rounded-3xl border border-slate-200/90 p-6 shadow-sm space-y-6">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">Paper Size & Dimensions</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">Select a standard paper standard or customize dimensions.</p>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900">Paper Size & Dimensions</h2>
+                    <p className="mt-0.5 text-xs text-slate-500">Select a standard paper size or customize dimensions. Swipe to explore.</p>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => scrollToPaperSize(activePaperSizeSlide - 1)}
+                      disabled={activePaperSizeSlide === 0}
+                      aria-label="Previous paper size"
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <ArrowLeft className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => scrollToPaperSize(activePaperSizeSlide + 1)}
+                      disabled={activePaperSizeSlide >= (pricingConfig?.paperSizes?.length || 1) - 1}
+                      aria-label="Next paper size"
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
 
-                {/* Paper Sizes */}
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                  {(pricingConfig?.paperSizes || []).map(s => {
+                <div
+                  ref={paperSizeCarouselRef}
+                  onScroll={handlePaperSizeCarouselScroll}
+                  className="-mx-1 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-1 pb-2 scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                  aria-label="Paper size options"
+                >
+                  {(pricingConfig?.paperSizes || []).map((s, index) => {
                     const isSelected = job.paperSizeId === s.id;
                     return (
                       <button
                         key={s.id}
                         type="button"
-                        onClick={() => setJob({ ...job, paperSizeId: s.id })}
-                        className={`py-2.5 px-2 rounded-2xl border text-center transition-all ${
+                        onClick={() => {
+                          setJob(prev => ({ ...prev, paperSizeId: s.id }));
+                          setActivePaperSizeSlide(index);
+                        }}
+                        aria-pressed={isSelected}
+                        className={`min-h-[82px] w-[38%] shrink-0 snap-start rounded-2xl border px-3 py-2.5 text-center transition-all sm:w-[25%] lg:w-[18%] ${
                           isSelected
                             ? 'border-brand-600 bg-brand-50 font-bold text-brand-900 shadow-xs ring-1 ring-brand-500'
-                            : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
                         }`}
                       >
                         <span className="block text-xs font-bold">{s.id}</span>
@@ -692,6 +788,27 @@ export default function CustomerOrderForm({
                     );
                   })}
                 </div>
+                {(pricingConfig?.paperSizes?.length || 0) > 1 && (
+                  <div className="-mt-4 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5" aria-label="Choose paper size slide">
+                      {pricingConfig.paperSizes.map((paperSize, index) => (
+                        <button
+                          key={paperSize.id}
+                          type="button"
+                          onClick={() => scrollToPaperSize(index)}
+                          aria-label={`Show ${paperSize.id} paper size`}
+                          aria-current={activePaperSizeSlide === index ? 'true' : undefined}
+                          className={`h-1.5 rounded-full transition-all ${
+                            activePaperSizeSlide === index ? 'w-6 bg-brand-600' : 'w-1.5 bg-slate-300 hover:bg-slate-400'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-[10px] font-medium tabular-nums text-slate-400">
+                      {activePaperSizeSlide + 1} / {pricingConfig.paperSizes.length}
+                    </span>
+                  </div>
+                )}
 
                 {job.paperSizeId === 'Custom' && (
                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 grid grid-cols-3 gap-3 text-xs">
@@ -740,22 +857,55 @@ export default function CustomerOrderForm({
 
                 {/* Paper Material */}
                 <div className="pt-2 border-t border-slate-100">
-                  <div className="mb-3">
-                    <h3 className="text-sm font-bold text-slate-900">Paper Material & Stock</h3>
-                    <p className="text-xs text-slate-500">Charged per physical sheet consumed.</p>
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">Paper Material & Stock</h3>
+                      <p className="text-xs text-slate-500">Charged per physical sheet consumed. Swipe to explore.</p>
+                    </div>
+                    {(pricingConfig?.paperMaterials?.length || 0) > 1 && (
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => scrollToMaterial(activeMaterialSlide - 1)}
+                          disabled={activeMaterialSlide === 0}
+                          aria-label="Previous paper material"
+                          className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <ArrowLeft className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => scrollToMaterial(activeMaterialSlide + 1)}
+                          disabled={activeMaterialSlide >= (pricingConfig?.paperMaterials?.length || 1) - 1}
+                          aria-label="Next paper material"
+                          className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <ArrowRight className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {(pricingConfig?.paperMaterials || []).map(m => {
+                  <div
+                    ref={materialCarouselRef}
+                    onScroll={handleMaterialCarouselScroll}
+                    className="-mx-1 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-1 pb-2 scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                    aria-label="Paper material options"
+                  >
+                    {(pricingConfig?.paperMaterials || []).map((m, index) => {
                       const isSelected = job.paperMaterialId === m.id;
                       return (
                         <button
                           key={m.id}
                           type="button"
-                          onClick={() => setJob({ ...job, paperMaterialId: m.id })}
-                          className={`p-3 rounded-2xl border text-left flex items-center justify-between transition-all ${
+                          onClick={() => {
+                            setJob(prev => ({ ...prev, paperMaterialId: m.id }));
+                            setActiveMaterialSlide(index);
+                          }}
+                          aria-pressed={isSelected}
+                          className={`flex min-h-[92px] w-[84%] shrink-0 snap-start items-center justify-between rounded-2xl border p-3 text-left transition-all sm:w-[48%] ${
                             isSelected
                               ? 'border-brand-600 bg-brand-50/80 ring-1 ring-brand-500 text-brand-900 shadow-xs'
-                              : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
                           }`}
                         >
                           <div>
@@ -769,6 +919,27 @@ export default function CustomerOrderForm({
                       );
                     })}
                   </div>
+                  {(pricingConfig?.paperMaterials?.length || 0) > 1 && (
+                    <div className="mt-1 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5" aria-label="Choose paper material slide">
+                        {pricingConfig.paperMaterials.map((material, index) => (
+                          <button
+                            key={material.id}
+                            type="button"
+                            onClick={() => scrollToMaterial(index)}
+                            aria-label={`Show ${material.name}`}
+                            aria-current={activeMaterialSlide === index ? 'true' : undefined}
+                            className={`h-1.5 rounded-full transition-all ${
+                              activeMaterialSlide === index ? 'w-6 bg-brand-600' : 'w-1.5 bg-slate-300 hover:bg-slate-400'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-[10px] font-medium tabular-nums text-slate-400">
+                        {activeMaterialSlide + 1} / {pricingConfig.paperMaterials.length}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Color Mode & Sides (Duplex) */}
