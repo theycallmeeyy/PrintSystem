@@ -1,4 +1,5 @@
-const API_BASE = '/api';
+export const API_ORIGIN = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
+const API_BASE = `${API_ORIGIN}/api`;
 const AUTH_TOKEN_KEY = 'printplus_staff_token';
 
 function getAuthHeaders(headers = {}) {
@@ -199,10 +200,13 @@ export async function uploadFiles(files) {
       body: formData
     });
   } catch {
-    throw new Error('Could not reach the upload service. Start the app with "npm run dev" and try again.');
+    throw new Error('Could not reach the upload service. Check the backend deployment and VITE_API_BASE_URL configuration.');
   }
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
+    if (res.status === 404) {
+      throw new Error('Upload API not found. Configure VITE_API_BASE_URL with the deployed backend URL and redeploy the frontend.');
+    }
     throw new Error(err.error || 'Failed to upload files');
   }
   return res.json();

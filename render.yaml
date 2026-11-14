@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: print-plus
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    disk:
+      name: print-plus-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /var/data
+      - key: CORS_ORIGIN
+        value: https://print-system-green.vercel.app
+      - key: INITIAL_SUPER_ADMIN_EMAIL
+        sync: false
+      - key: INITIAL_SUPER_ADMIN_PASSWORD
+        sync: false

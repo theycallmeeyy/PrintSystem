@@ -87,6 +87,7 @@ npm install
    ```bash
    npm start
    ```
+
    Open your browser at **`http://localhost:5000`**.
 
 3. **Development Mode (Vite with hot reload)**:
@@ -100,3 +101,14 @@ $env:INITIAL_SUPER_ADMIN_EMAIL = "admin@example.com"
 $env:INITIAL_SUPER_ADMIN_PASSWORD = "use-a-long-unique-password"
 npm start
 ```
+
+### Deploying with Vercel (frontend) and Render (backend)
+
+The Vercel deployment serves the frontend only. The Express API, WebSocket server, and file uploads must run on a Node.js host. This repository includes a Render Blueprint in `render.yaml` with a persistent disk for order data, pricing, staff accounts, and uploaded files.
+
+1. In Render, create a **Blueprint** from this repository and deploy the `print-plus` service. Provide a unique Super Admin email and password when prompted for the `INITIAL_SUPER_ADMIN_EMAIL` and `INITIAL_SUPER_ADMIN_PASSWORD` secrets.
+2. Wait until the service is live, then verify `https://<your-render-service>.onrender.com/api/health` returns `{"status":"ok"}`.
+3. In the Vercel project settings, add the environment variable `VITE_API_BASE_URL` with the Render service origin, for example `https://print-plus.onrender.com` (no trailing slash and no `/api` suffix). Redeploy Vercel after setting it.
+4. The Render Blueprint allows the production Vercel site `https://print-system-green.vercel.app`. If the Vercel domain changes, update Render's `CORS_ORIGIN` to the exact frontend origin (or a comma-separated list of origins), then redeploy the backend.
+
+The Render service uses a persistent disk mounted at `/var/data`; do not remove or replace it without backing up its contents. Uploaded documents and order records live there and are not part of the Vercel deployment.

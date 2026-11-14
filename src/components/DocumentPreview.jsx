@@ -3,6 +3,7 @@ import {
   Eye, FileText, ZoomIn, ZoomOut, RotateCw, Edit3, Check, Type, Plus, ChevronLeft, ChevronRight, Trash2,
   AlignCenter, AlignJustify, AlignLeft, AlignRight, Columns, Ruler, Square, Bold, Italic
 } from 'lucide-react';
+import { API_ORIGIN } from '../services/api';
 
 const LEGACY_PAGE_BREAK = '\n\n[Page Break]\n\n';
 const EMPTY_RUNS = [];
@@ -163,7 +164,11 @@ export default function DocumentPreview({
     selectedFile.mimetype === 'application/pdf' || selectedFileExtension === 'pdf'
   );
   const isDocxFile = selectedFile && selectedFileExtension === 'docx';
-  const fileUrl = selectedFile?.url || localFileUrl;
+  const fileUrl = selectedFile?.url
+    ? (/^https?:\/\//i.test(selectedFile.url) || !API_ORIGIN
+      ? selectedFile.url
+      : `${API_ORIGIN}${selectedFile.url.startsWith('/') ? '' : '/'}${selectedFile.url}`)
+    : localFileUrl;
 
   useEffect(() => {
     setActiveFileIndex(index => Math.min(index, Math.max(availableFiles.length - 1, 0)));

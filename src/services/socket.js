@@ -1,4 +1,5 @@
 import { io } from 'socket.io-client';
+import { API_ORIGIN } from './api';
 
 let socketInstance = null;
 let staffToken = null;
@@ -13,8 +14,8 @@ export function setSocketAuthToken(token) {
 
 export function getSocket() {
   if (!socketInstance) {
-    // In dev Vite proxies /socket.io, in production relative path works
-    socketInstance = io(window.location.origin, {
+    // In development Vite proxies locally; published clients connect to the configured API host.
+    socketInstance = io(API_ORIGIN || window.location.origin, {
       transports: ['websocket', 'polling'],
       reconnectionAttempts: 10,
       reconnectionDelay: 1000,
