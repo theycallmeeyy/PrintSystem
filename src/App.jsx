@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { lazy, Suspense, useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import CustomerOrderForm from './components/CustomerOrderForm';
 import OrderTracking from './components/OrderTracking';
@@ -8,6 +8,7 @@ import AdminLogin from './components/AdminLogin';
 import StaffAccountManagement from './components/StaffAccountManagement';
 import SuperAdminProgress from './components/SuperAdminProgress';
 import HomePage from './components/HomePage';
+const PrivacyConsentModal = lazy(() => import('./components/PrivacyConsentModal'));
 import {
   fetchCurrentStaffUser,
   fetchPricing,
@@ -25,6 +26,8 @@ export default function App() {
   const [staffUser, setStaffUser] = useState(null);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
   const [liveToast, setLiveToast] = useState(null);
+  const [isPrivacyConsentOpen, setIsPrivacyConsentOpen] = useState(false);
+  const [privacyConsent, setPrivacyConsent] = useState(null);
 
   // Load pricing
   const loadInitialPricing = async () => {
@@ -113,8 +116,27 @@ export default function App() {
       saveStaffToken(null);
       setSocketAuthToken(null);
       setStaffUser(null);
-      setCurrentView('customer');
+      setPrivacyConsent(null);
+      setCurrentView('home');
     }
+  };
+
+  const handleStartCustomerOrder = () => {
+    setIsPrivacyConsentOpen(true);
+  };
+
+  const handlePrivacyConsent = (consent) => {
+    setPrivacyConsent(consent);
+    setIsPrivacyConsentOpen(false);
+    setCurrentView('customer');
+  };
+
+  const handleViewChange = (view) => {
+    if (view === 'customer') {
+      handleStartCustomerOrder();
+      return;
+    }
+    setCurrentView(view);
   };
 
   const handleTrackSpecificOrder = (orderId) => {
@@ -127,7 +149,7 @@ export default function App() {
       {/* Navigation Header */}
       <Navbar
         currentView={currentView}
-        onViewChange={(view) => setCurrentView(view)}
+        onViewChange={handleViewChange}
         isSocketConnected={isSocketConnected}
         staffUser={staffUser}
         onLogout={handleLogout}
@@ -152,12 +174,13 @@ export default function App() {
       {/* Main Content View Switcher */}
       <main className={currentView === 'home' ? 'flex flex-1' : 'flex-1 pb-16'}>
         {currentView === 'home' && (
-          <HomePage onPrintNow={() => setCurrentView('customer')} />
+          <HomePage onPrintNow={handleStartCustomerOrder} />
         )}
 
         {currentView === 'customer' && (
           <CustomerOrderForm
             pricingConfig={pricingConfig}
+            privacyConsent={privacyConsent}
             onOrderCreated={handleOrderCreated}
             onTrackOrder={handleTrackSpecificOrder}
           />
@@ -166,14 +189,14 @@ export default function App() {
         {currentView === 'track' && (
           <OrderTracking
             initialOrderId={trackedOrderId}
-            onNavigateToNewOrder={() => setCurrentView('customer')}
+            onNavigateToNewOrder={handleStartCustomerOrder}
           />
         )}
 
         {currentView === 'admin' && !staffUser && (
           <AdminLogin
             onAuthenticated={handleStaffAuthenticated}
-            onBackToOrders={() => setCurrentView('customer')}
+            onBackToOrders={handleStartCustomerOrder}
           />
         )}
 
@@ -239,6 +262,23 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {isPrivacyConsentOpen && (
+        <Suspense
+          fallback={(
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
+              <p className="rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-700">
+                Loading privacy agreement...
+              </p>
+            </div>
+          )}
+        >
+          <PrivacyConsentModal
+            onCancel={() => setIsPrivacyConsentOpen(false)}
+            onAgree={handlePrivacyConsent}
+          />
+        </Suspense>
+      )}
 
       {/* Footer */}
       {currentView !== 'home' && (

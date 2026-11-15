@@ -8,6 +8,7 @@ export default function OrderReviewModal({
   onSubmit,
   isSubmitting,
   orderData,
+  canSubmitOrder,
   pricingCalculation
 }) {
   const [isFilePreviewOpen, setIsFilePreviewOpen] = useState(false);
@@ -15,7 +16,7 @@ export default function OrderReviewModal({
 
   if (!isOpen) return null;
 
-  const { customer, job, formatting, files, isRush, isDelivery, deliveryAddress, paymentMethod } = orderData;
+  const { customer, job, formatting, files, isRush, isDelivery, deliveryAddress, paymentMethod, privacyConsent } = orderData;
   const { costs, calculationMeta, lineItems } = pricingCalculation || {};
   const formatPHP = (num) => {
     const amount = (num || 0).toLocaleString('en-US', {
@@ -76,6 +77,16 @@ export default function OrderReviewModal({
                 <p className="text-slate-700 italic mt-0.5">{customer.notes}</p>
               </div>
             )}
+          </div>
+
+          <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-xs text-blue-900">
+            <h4 className="font-bold">build3x privacy consent</h4>
+            <p className="mt-1">
+              Policy version {privacyConsent?.version || '—'} · Accepted at {privacyConsent?.acceptedAt || 'Not recorded'}
+            </p>
+            <p className="mt-1">
+              Promotional emails: {privacyConsent?.marketingOptIn ? 'Opted in' : 'Not opted in'}
+            </p>
           </div>
 
           {/* Job Specifications & File */}
@@ -266,8 +277,8 @@ export default function OrderReviewModal({
           <button
             type="button"
             onClick={onSubmit}
-            disabled={isSubmitting}
-            className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold transition flex items-center gap-2 shadow-md hover:shadow-lg text-sm"
+            disabled={isSubmitting || !canSubmitOrder}
+            className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 text-white font-bold transition flex items-center gap-2 shadow-md hover:shadow-lg text-sm"
           >
             <CheckCircle2 className="w-4 h-4" />
             <span>{isSubmitting ? 'Submitting Order...' : 'Confirm & Submit Order'}</span>

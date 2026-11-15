@@ -482,6 +482,7 @@ export class Database {
       deliveryAddress: orderInput.deliveryAddress || '',
       paymentStatus: 'unpaid',
       paymentMethod: orderInput.paymentMethod || 'cash',
+      privacyConsent: orderInput.privacyConsent,
       pricingSnapshot: officialPricingSnapshot,
       quoteAdjustment: null // Can be set if staff revises quote
     };

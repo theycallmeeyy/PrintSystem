@@ -101,6 +101,7 @@ export default function HomePage({ onPrintNow }) {
         <span>Professional printing made effortless.</span>
         <span>Mon–Sat · 8:00 AM–6:00 PM</span>
       </footer>
+
     </div>
   );
 }

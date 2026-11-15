@@ -9,11 +9,17 @@ import { randomBytes } from 'crypto';
 import { fileURLToPath } from 'url';
 import { db } from './db.js';
 import { calculatePricing } from './pricingEngine.js';
+import { PRIVACY_POLICY_VERSION } from '../privacyPolicy.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '../data');
 const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
+const isClientLocalTimestamp = (value) => (
+  typeof value === 'string' &&
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?[+-]\d{2}:\d{2}$/.test(value) &&
+  Number.isFinite(Date.parse(value))
+);
 
 // Ensure upload directory exists
 if (!fs.existsSync(UPLOAD_DIR)) {
@@ -87,21 +93,25 @@ const requireRole = (...roles) => (req, res, next) => {
   return next();
 };
 
-const publicOrderView = (order) => ({
-  ...order,
-  customer: { name: 'Customer' },
-  files: [],
-  deliveryAddress: '',
-  formatting: {
-    orientation: order.formatting?.orientation,
-    columns: order.formatting?.columns
-  },
-  statusHistory: (order.statusHistory || []).map(({ status, timestamp, note }) => ({
-    status,
-    timestamp,
-    note
-  }))
-});
+const publicOrderView = (order) => {
+  const publicOrder = { ...order };
+  delete publicOrder.privacyConsent;
+  return {
+    ...publicOrder,
+    customer: { name: 'Customer' },
+    files: [],
+    deliveryAddress: '',
+    formatting: {
+      orientation: order.formatting?.orientation,
+      columns: order.formatting?.columns
+    },
+    statusHistory: (order.statusHistory || []).map(({ status, timestamp, note }) => ({
+      status,
+      timestamp,
+      note
+    }))
+  };
+};
 
 io.use((socket, next) => {
   const token = socket.handshake.auth?.token;
@@ -388,7 +398,18 @@ app.get('/api/orders/:id', (req, res) => {
 
 app.post('/api/orders', (req, res) => {
   try {
-    const { customer, job, formatting, files, isRush, isDelivery, deliveryAddress, discountCode, paymentMethod } = req.body;
+    const { customer, job, formatting, files, isRush, isDelivery, deliveryAddress, discountCode, paymentMethod, privacyConsent } = req.body;
+
+    if (
+      privacyConsent?.accepted !== true ||
+      privacyConsent?.version !== PRIVACY_POLICY_VERSION ||
+      !isClientLocalTimestamp(privacyConsent.acceptedAt) ||
+      !isClientLocalTimestamp(privacyConsent.orderSubmittedAtClient) ||
+      Date.parse(privacyConsent.orderSubmittedAtClient) < Date.parse(privacyConsent.acceptedAt) ||
+      typeof privacyConsent.marketingOptIn !== 'boolean'
+    ) {
+      return res.status(400).json({ error: 'Please accept the build3x Privacy Policy before placing an order' });
+    }
 
     if (!job || !job.jobTypeId) {
       return res.status(400).json({ error: 'Job type selection is required' });
@@ -403,7 +424,15 @@ app.post('/api/orders', (req, res) => {
       isDelivery: Boolean(isDelivery),
       deliveryAddress,
       discountCode,
-      paymentMethod
+      paymentMethod,
+      privacyConsent: {
+        accepted: true,
+        acceptedAt: privacyConsent.acceptedAt,
+        orderSubmittedAtClient: privacyConsent.orderSubmittedAtClient,
+        receivedAtServer: new Date().toISOString(),
+        version: PRIVACY_POLICY_VERSION,
+        marketingOptIn: privacyConsent.marketingOptIn
+      }
     });
 
     io.to('staff').emit('order:created', createdOrder);

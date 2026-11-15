@@ -9,9 +9,11 @@ import DocumentPreview from './DocumentPreview';
 import PricingSummary from './PricingSummary';
 import OrderReviewModal from './OrderReviewModal';
 import { calculatePricePreview, createOrder, uploadFiles } from '../services/api';
+import { toClientLocalIsoTimestamp } from '../utils/clientDateTime';
 
 export default function CustomerOrderForm({
   pricingConfig,
+  privacyConsent,
   onOrderCreated,
   onTrackOrder
 }) {
@@ -283,11 +285,21 @@ export default function CustomerOrderForm({
   };
 
   const handleReviewOrder = () => {
+    if (!privacyConsent?.accepted) {
+      setFormError('Please accept the build3x privacy agreement before submitting your order.');
+      return;
+    }
     if (!validateStep(4)) return;
     setIsReviewModalOpen(true);
   };
 
   const handleSubmitOrder = async () => {
+    if (!privacyConsent?.accepted) {
+      setFormError('Please accept the build3x privacy agreement before submitting your order.');
+      setIsReviewModalOpen(false);
+      return;
+    }
+
     setIsSubmitting(true);
     setFormError(null);
 
@@ -301,7 +313,11 @@ export default function CustomerOrderForm({
         isDelivery,
         deliveryAddress: isDelivery ? deliveryAddress : '',
         discountCode: appliedPromo,
-        paymentMethod
+        paymentMethod,
+        privacyConsent: {
+          ...privacyConsent,
+          orderSubmittedAtClient: toClientLocalIsoTimestamp(new Date())
+        }
       };
 
       const created = await createOrder(orderPayload);
@@ -1281,8 +1297,10 @@ export default function CustomerOrderForm({
           isRush,
           isDelivery,
           deliveryAddress,
-          paymentMethod
+          paymentMethod,
+          privacyConsent
         }}
+        canSubmitOrder={privacyConsent?.accepted === true}
         pricingCalculation={pricingCalculation}
       />
     </div>
