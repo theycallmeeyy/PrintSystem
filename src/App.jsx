@@ -7,6 +7,7 @@ import StaffPricingManagement from './components/StaffPricingManagement';
 import AdminLogin from './components/AdminLogin';
 import StaffAccountManagement from './components/StaffAccountManagement';
 import SuperAdminProgress from './components/SuperAdminProgress';
+import HomePage from './components/HomePage';
 import {
   fetchCurrentStaffUser,
   fetchPricing,
@@ -17,7 +18,7 @@ import {
 import { getSocket, setSocketAuthToken } from './services/socket';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState('customer');
+  const [currentView, setCurrentView] = useState('home');
   const [adminSection, setAdminSection] = useState('queue');
   const [trackedOrderId, setTrackedOrderId] = useState('');
   const [pricingConfig, setPricingConfig] = useState(null);
@@ -149,7 +150,11 @@ export default function App() {
       )}
 
       {/* Main Content View Switcher */}
-      <main className="flex-1 pb-16">
+      <main className={currentView === 'home' ? 'flex flex-1' : 'flex-1 pb-16'}>
+        {currentView === 'home' && (
+          <HomePage onPrintNow={() => setCurrentView('customer')} />
+        )}
+
         {currentView === 'customer' && (
           <CustomerOrderForm
             pricingConfig={pricingConfig}
@@ -236,25 +241,27 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-between gap-4">
-          <p>© 2026 Print Plus • Commercial Print Shop Order Management System</p>
-          <div className="flex items-center gap-3 font-medium">
-            <span className="inline-flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-red-500" />
-              <span>Red (New)</span>
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-amber-500" />
-              <span>Yellow (In Progress)</span>
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span>Green (Finished)</span>
-            </span>
+      {currentView !== 'home' && (
+        <footer className="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500">
+          <div className="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-between gap-4">
+            <p>© 2026 Print Plus • Commercial Print Shop Order Management System</p>
+            <div className="flex items-center gap-3 font-medium">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-red-500" />
+                <span>Red (New)</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                <span>Yellow (In Progress)</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span>Green (Finished)</span>
+              </span>
+            </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      )}
     </div>
   );
 }

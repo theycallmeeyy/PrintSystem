@@ -1,5 +1,5 @@
 import React from 'react';
-import { Printer, Shield, Wifi, WifiOff, LogOut } from 'lucide-react';
+import { Printer, Shield, Wifi, WifiOff, LogOut, LockKeyhole } from 'lucide-react';
 
 export default function Navbar({
   currentView,
@@ -8,6 +8,38 @@ export default function Navbar({
   staffUser = null,
   onLogout
 }) {
+  if (currentView === 'home') {
+    return (
+      <header className="bg-[#f3f7ff] px-5 pt-6 sm:px-8 sm:pt-8">
+        <div className="mx-auto flex max-w-[1120px] items-center justify-center">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => onViewChange('home')}
+              aria-label="Print Plus home"
+              className="flex items-center gap-2.5"
+            >
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white">
+                <Printer className="h-5 w-5" />
+              </span>
+              <span className="text-lg font-extrabold tracking-tight text-slate-900">
+                Print<span className="text-blue-600">Plus</span>
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onViewChange('admin')}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
+            >
+              <LockKeyhole className="h-3.5 w-3.5" />
+              Admin login
+            </button>
+          </div>
+        </div>
+      </header>
+    );
+  }
+
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
