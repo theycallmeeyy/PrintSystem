@@ -1,5 +1,5 @@
 import React from 'react';
-import { Printer, Shield, Wifi, WifiOff, LogOut, LockKeyhole } from 'lucide-react';
+import { Shield, Wifi, WifiOff, LogOut, LockKeyhole } from 'lucide-react';
 
 export default function Navbar({
   currentView,
@@ -19,8 +19,8 @@ export default function Navbar({
               aria-label="Print Plus home"
               className="flex items-center gap-2.5"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white">
-                <Printer className="h-5 w-5" />
+              <span className="flex h-9 w-9 items-center justify-center">
+                <img src="/print-plus-logo.svg" alt="" className="h-full w-full object-contain" />
               </span>
               <span className="text-lg font-extrabold tracking-tight text-slate-900">
                 Print<span className="text-blue-600">Plus</span>
@@ -49,8 +49,8 @@ export default function Navbar({
             onClick={() => onViewChange('customer')}
             className="flex items-center gap-2.5 cursor-pointer group"
           >
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-600 to-sky-400 text-white flex items-center justify-center shadow-md shadow-brand-500/20 group-hover:scale-105 transition-transform">
-              <Printer className="w-5 h-5" />
+            <div className="w-10 h-10 flex items-center justify-center transition-transform group-hover:scale-105">
+              <img src="/print-plus-logo.svg" alt="" className="h-full w-full object-contain drop-shadow-md" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">

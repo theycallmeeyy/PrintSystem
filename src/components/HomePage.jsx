@@ -4,7 +4,6 @@ import {
   Check,
   Clock3,
   FileText,
-  Printer,
   ShieldCheck
 } from 'lucide-react';
 
@@ -70,7 +69,7 @@ export default function HomePage({ onPrintNow }) {
             <div className="absolute left-[31%] top-[11%] h-[73%] w-[47%] rotate-[-7deg] rounded-md bg-white shadow-[0_20px_40px_rgba(15,35,80,0.1)]" />
             <div className="absolute left-[33%] top-[15%] flex h-[73%] w-[55%] rotate-[5deg] flex-col rounded-md bg-white p-6 shadow-[0_24px_50px_rgba(15,35,80,0.2)] sm:p-8">
               <div className="flex items-center gap-1.5 text-[8px] font-bold text-blue-600">
-                <Printer className="h-3.5 w-3.5" />
+                <img src="/print-plus-logo.svg" alt="" className="h-4 w-4" />
                 PRINTPLUS
               </div>
               <p className="mt-12 text-[clamp(1.2rem,3vw,1.55rem)] font-medium tracking-tight text-[#12234e]">
